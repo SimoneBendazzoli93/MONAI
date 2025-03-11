@@ -54,7 +54,7 @@ def get_nnunet_trainer(
         from monai.apps import SupervisedTrainer
         from monai.bundle.nnunet import get_nnunet_trainer
 
-        dataset_name_or_id = 'Task101_PROSTATE'
+        dataset_name_or_id = 'Task009_Spleen'
         fold = 0
         configuration = '3d_fullres'
         nnunet_trainer = get_nnunet_trainer(dataset_name_or_id, configuration, fold)
@@ -186,8 +186,8 @@ class ModelnnUNetWrapper(torch.nn.Module):
         from nnunetv2.utilities.plans_handling.plans_handler import PlansManager
 
         # Block Added from nnUNet/nnunetv2/inference/predict_from_raw_data.py#nnUNetPredictor
-        dataset_json = load_json(join(model_training_output_dir, "dataset.json"))
-        plans = load_json(join(model_training_output_dir, "plans.json"))
+        dataset_json = load_json(join(Path(model_training_output_dir).parent, "dataset.json"))
+        plans = load_json(join(Path(model_training_output_dir).parent, "plans.json"))
         plans_manager = PlansManager(plans)
 
         if isinstance(use_folds, str):
@@ -197,7 +197,7 @@ class ModelnnUNetWrapper(torch.nn.Module):
         for i, f in enumerate(use_folds):
             f = str(f) if f != "all" else f
             checkpoint = torch.load(
-                join(model_training_output_dir, "nnunet_checkpoint.pth"), map_location=torch.device("cpu")
+                join(Path(model_training_output_dir).parent, "nnunet_checkpoint.pth"), map_location=torch.device("cpu")
             )
             monai_checkpoint = torch.load(join(model_training_output_dir, model_name), map_location=torch.device("cpu"))
             if i == 0:
@@ -209,7 +209,10 @@ class ModelnnUNetWrapper(torch.nn.Module):
                     else None
                 )
 
-            parameters.append(monai_checkpoint["network_weights"])
+            if "network_weights" in monai_checkpoint.keys():
+                parameters.append(monai_checkpoint["network_weights"])
+            else:
+                parameters.append(monai_checkpoint)
 
         configuration_manager = plans_manager.get_configuration(configuration_name)
         # restore network
@@ -249,18 +252,18 @@ class ModelnnUNetWrapper(torch.nn.Module):
             # and not isinstance(predictor.network, OptimizedModule)
         ):
             print("Using torch.compile")
-            predictor.network = torch.compile(self.network)
+            # predictor.network = torch.compile(self.network)
         # End Block
         self.network_weights = self.predictor.network
 
-    def forward(self, x):
+    def forward(self, x: MetaTensor) -> MetaTensor:
         """
         Forward pass for the nnUNet model.
 
         :no-index:
 
         Args:
-            x (Union[torch.Tensor, Tuple[MetaTensor]]): Input tensor or a tuple of MetaTensors. If the input is a tuple,
+            x (MetaTensor): Input tensor. If the input is a tuple,
                 it is assumed to be a decollated batch (list of tensors). Otherwise, it is assumed to be a collated batch.
 
         Returns:
@@ -276,24 +279,37 @@ class ModelnnUNetWrapper(torch.nn.Module):
             - The predictions are converted to torch tensors, with added batch and channel dimensions.
             - The output tensor is concatenated along the batch dimension and returned as a MetaTensor with the same metadata.
         """
-        if type(x) is tuple:  # if batch is decollated (list of tensors)
-            input_files = [img.meta["filename_or_obj"][0] for img in x]
-        else:  # if batch is collated
-            input_files = x.meta["filename_or_obj"]
-            if isinstance(input_files, str):
-                input_files = [input_files]
+        # if isinstance(x, tuple):  # if batch is decollated (list of tensors)
+        #    properties_or_list_of_properties = []
+        #    image_or_list_of_images = []
+
+        # for img in x:
+        # if isinstance(img, MetaTensor):
+        #    properties_or_list_of_properties.append({"spacing": img.meta['pixdim'][0][1:4].numpy().tolist()})
+        #    image_or_list_of_images.append(img.cpu().numpy()[0,:])
+        # else:
+        #    raise TypeError("Input must be a MetaTensor or a tuple of MetaTensors.")
+
+        # else:  # if batch is collated
+        if isinstance(x, MetaTensor):
+            if "pixdim" in x.meta:
+                properties_or_list_of_properties = {"spacing": x.meta["pixdim"][0][1:4].numpy().tolist()}
+            else:
+                properties_or_list_of_properties = {"spacing": [1.0, 1.0, 1.0]}
+        else:
+            raise TypeError("Input must be a MetaTensor or a tuple of MetaTensors.")
+
+        image_or_list_of_images = x.cpu().numpy()[0, :]
 
         # input_files should be a list of file paths, one per modality
-        prediction_output = self.predictor.predict_from_files(
-            [input_files],
+        prediction_output = self.predictor.predict_from_list_of_npy_arrays(
+            image_or_list_of_images,
             None,
+            properties_or_list_of_properties,
+            truncated_ofname=None,
             save_probabilities=False,
-            overwrite=True,
-            num_processes_preprocessing=2,
+            num_processes=2,
             num_processes_segmentation_export=2,
-            folder_with_segs_from_prev_stage=None,
-            num_parts=1,
-            part_id=0,
         )
         # prediction_output is a list of numpy arrays, with dimensions (H, W, D), output from ArgMax
 
@@ -302,10 +318,10 @@ class ModelnnUNetWrapper(torch.nn.Module):
             out_tensors.append(torch.from_numpy(np.expand_dims(np.expand_dims(out, 0), 0)))
         out_tensor = torch.cat(out_tensors, 0)  # Concatenate along batch dimension
 
-        if type(x) is tuple:
-            return MetaTensor(out_tensor, meta=x[0].meta)
-        else:
-            return MetaTensor(out_tensor, meta=x.meta)
+        # if type(x) is tuple:
+        #    return MetaTensor(out_tensor, meta=x[0].meta)
+        # else:
+        return MetaTensor(out_tensor, meta=x.meta)
 
 
 def get_nnunet_monai_predictor(model_folder, model_name="model.pt"):
@@ -411,17 +427,22 @@ def convert_nnunet_to_monai_bundle(nnunet_config, bundle_root_folder, fold=0):
 
     torch.save(nnunet_checkpoint, Path(bundle_root_folder).joinpath("models", "nnunet_checkpoint.pth"))
 
+    Path(bundle_root_folder).joinpath("models", f"fold_{fold}").mkdir(parents=True, exist_ok=True)
     monai_last_checkpoint = {}
     monai_last_checkpoint["network_weights"] = nnunet_checkpoint_final["network_weights"]
-    torch.save(monai_last_checkpoint, Path(bundle_root_folder).joinpath("models", "model.pt"))
+    torch.save(monai_last_checkpoint, Path(bundle_root_folder).joinpath("models", f"fold_{fold}", "model.pt"))
 
     monai_best_checkpoint = {}
     monai_best_checkpoint["network_weights"] = nnunet_checkpoint_best["network_weights"]
-    torch.save(monai_best_checkpoint, Path(bundle_root_folder).joinpath("models", "best_model.pt"))
+    torch.save(monai_best_checkpoint, Path(bundle_root_folder).joinpath("models", f"fold_{fold}", "best_model.pt"))
 
-    shutil.copy(
-        Path(nnunet_model_folder).joinpath("plans.json"), Path(bundle_root_folder).joinpath("models", "plans.json")
-    )
-    shutil.copy(
-        Path(nnunet_model_folder).joinpath("dataset.json"), Path(bundle_root_folder).joinpath("models", "dataset.json")
-    )
+    if not os.path.exists(os.path.join(bundle_root_folder, "models", "plans.json")):
+        shutil.copy(
+            Path(nnunet_model_folder).joinpath("plans.json"), Path(bundle_root_folder).joinpath("models", "plans.json")
+        )
+
+    if not os.path.exists(os.path.join(bundle_root_folder, "models", "dataset.json")):
+        shutil.copy(
+            Path(nnunet_model_folder).joinpath("dataset.json"),
+            Path(bundle_root_folder).joinpath("models", "dataset.json"),
+        )
