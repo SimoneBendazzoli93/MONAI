@@ -617,7 +617,7 @@ def convert_monai_bundle_to_nnunet(nnunet_config: dict, bundle_root_folder: str,
 
     nnunet_checkpoint["network_weights"] = odict()
 
-    if "optimizer_state" in monai_last_checkpoint:
+    if "optimizer_state" in monai_best_checkpoint:
         nnunet_checkpoint["optimizer_state"] = monai_best_checkpoint["optimizer_state"]
 
     for key in monai_best_checkpoint["network_weights"]:
