@@ -1342,10 +1342,6 @@ def cross_site_validation_config(clients, experiment, root_dir, script_dir, nvfl
         if "bundle_root" in clients[client_id]:
             client["executors"][0]["executor"]["args"]["bundle_root"] = clients[client_id]["bundle_root"]
 
-        if "original_path" in clients[client_id]:
-            client["executors"][0]["executor"]["args"]["original_path"] = clients[client_id][
-                "original_path"
-            ]
 
         Path(root_dir).joinpath(task_name).joinpath(f"{task_name}-client-{client_id}").mkdir(
             parents=True, exist_ok=True

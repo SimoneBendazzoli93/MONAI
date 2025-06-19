@@ -273,7 +273,7 @@ def prepare_data_folder_api(data_dir,
     return data_list
 
 
-def cross_site_evaluation_api(nnunet_root_dir, dataset_name_or_id, app_path, app_model_path, app_output_path, fold=0, trainer_class_name="nnUNetTrainer", nnunet_plans_name="nnUNetPlans", skip_prediction=False, original_path=None):
+def cross_site_evaluation_api(nnunet_root_dir, dataset_name_or_id, app_path, app_model_path, app_output_path, fold=0, trainer_class_name="nnUNetTrainer", nnunet_plans_name="nnUNetPlans", skip_prediction=False):
     data_src_cfg = os.path.join(nnunet_root_dir, f"Task{dataset_name_or_id}_data_src_cfg.yaml")
 
     runner = nnUNetV2Runner(input_config=data_src_cfg, trainer_class_name=trainer_class_name, work_dir=nnunet_root_dir)
@@ -282,10 +282,10 @@ def cross_site_evaluation_api(nnunet_root_dir, dataset_name_or_id, app_path, app
         nnunet_config = yaml.safe_load(f)
 
     data_root_dir = nnunet_config["dataroot"]
-    data_list_file = nnunet_config["datalist"]
+    #data_list_file = nnunet_config["datalist"]
     from nnunetv2.utilities.dataset_name_id_conversion import maybe_convert_to_dataset_name
 
-    data_list = load_decathlon_datalist(data_list_file_path=data_list_file, base_dir=data_root_dir)
+    #data_list = load_decathlon_datalist(data_list_file_path=data_list_file, base_dir=data_root_dir)
 
     dataset_name = maybe_convert_to_dataset_name(int(dataset_name_or_id))
 
@@ -297,51 +297,43 @@ def cross_site_evaluation_api(nnunet_root_dir, dataset_name_or_id, app_path, app
 
     id_mapping = {}
 
-    for data in data_list:
-        app_input_path = data["image"]
-        filename = Path(app_input_path).name
-        
-        new_id = None  
-        updated_image_path = False
+    for case_id in nnunet_splits[fold]["val"]:
         for case in nnunet_datalist["training"]:
-            if case["image"].endswith(filename):
-                new_id = case["new_name"]
-                break
-            if filename.startswith(case["new_name"]+"_"):
-                new_id = case["new_name"]
-                data["image"] = os.path.join(original_path, Path(case["image"]).name)
-                app_input_path = data["image"]
-                updated_image_path = True
-                break
-        if new_id in nnunet_splits[fold]["val"]:
-            if updated_image_path:
-                id_mapping[Path(data["image"]).name.split(".")[0]] = new_id
-            else:
-                id_mapping[Path(data["image"]).name.split("_")[0].split(".")[0]] = new_id
-            if skip_prediction:
-                continue
-            print(f"Processing case: {new_id}")
-            print(f"App input path: {app_input_path}")
-            mapped_filename = Path(data["image"]).name.split(".")[0]
-            print(f"Mapping: {mapped_filename} -> {new_id}")
-            subprocess.run(
-                [
-                "python",
-                app_path,
-                "--input", data["image"]
-                ],
-                env={
-                    **os.environ,
-                    "HOLOSCAN_MODEL_PATH": app_model_path,
-                    "HOLOSCAN_OUTPUT_PATH": app_output_path,
-                }
-            )
+            if case["new_name"] == case_id:
+                app_input_path = Path(data_root_dir).joinpath(case["image"])
+                if Path(case["image"]).name.split(".")[0].endswith("_image"):
+                    id_mapping[Path(case["image"]).name.split(".")[0][:-len("_image")]] = case_id
+                else:
+                    id_mapping[Path(case["image"]).name.split(".")[0]] = case_id
+            
+                if skip_prediction:
+                    continue
+                print(f"Processing case: {case_id}")
+                print(f"App input path: {app_input_path}")
+                mapped_filename = Path(case["image"]).name.split(".")[0]
+                print(f"Mapping: {mapped_filename} -> {case_id}")
+                subprocess.run(
+                    [
+                    "python",
+                    app_path,
+                    "--input", app_input_path
+                    ],
+                    env={
+                        **os.environ,
+                        "HOLOSCAN_MODEL_PATH": app_model_path,
+                        "HOLOSCAN_OUTPUT_PATH": app_output_path,
+                    }
+                )
 
     for file in os.listdir(app_output_path):
         if file.endswith(".nii.gz"):
             if skip_prediction:
                 continue
-            id = id_mapping[file[:-len(".nii.gz")]]
+            if file.endswith("_seg.nii.gz"):
+                id = id_mapping[file[:-len("_seg.nii.gz")]]
+            else:
+                id = id_mapping[file[:-len(".nii.gz")]]
+           
             shutil.move(
                 os.path.join(app_output_path, file),
                 os.path.join(app_output_path, f"{id}.nii.gz")
@@ -656,10 +648,11 @@ def train_api(nnunet_root_dir, dataset_name_or_id, experiment_name, trainer_clas
     runner.train_single_model(config="3d_fullres", fold=fold, val="")
 
 
-def validation_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name="nnUNetTrainer", nnunet_plans_name="nnUNetPlans", fold=0):
+def validation_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name="nnUNetTrainer", nnunet_plans_name="nnUNetPlans", fold=0, skip_prediction=False):
     data_src_cfg = os.path.join(nnunet_root_dir, f"Task{dataset_name_or_id}_data_src_cfg.yaml")
     runner = nnUNetV2Runner(input_config=data_src_cfg, trainer_class_name=trainer_class_name, work_dir=nnunet_root_dir)
-    runner.train_single_model(config="3d_fullres", fold=fold, val="")
+    if not skip_prediction:
+        runner.train_single_model(config="3d_fullres", fold=fold, val="")
     dataset_file = os.path.join(
         runner.nnunet_results,
         runner.dataset_name,

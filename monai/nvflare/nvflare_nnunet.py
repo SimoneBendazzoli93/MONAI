@@ -659,7 +659,7 @@ def finalize_bundle(bundle_root, nnunet_root_dir=None, validate_with_nnunet=True
 
 def run_cross_site_validation(nnunet_root_dir, dataset_name_or_id, app_path, app_model_path, app_output_path, model_name, trainer_class_name="nnUNetTrainer", fold=0,
                     experiment_name=None, client_name=None, tracking_uri=None,
-                    nnunet_plans_name="nnUNetPlans", mlflow_token=None, skip_prediction=False, dataset_name=None, original_path=None):
+                    nnunet_plans_name="nnUNetPlans", mlflow_token=None, skip_prediction=False, dataset_name=None):
 
     validation_summary_dict, labels = cross_site_evaluation_api(
         nnunet_root_dir,
@@ -671,7 +671,6 @@ def run_cross_site_validation(nnunet_root_dir, dataset_name_or_id, app_path, app
         fold=fold,
         nnunet_plans_name=nnunet_plans_name,
         skip_prediction=skip_prediction,
-        original_path = original_path,
 
     )
     if mlflow_token is not None:
@@ -685,7 +684,7 @@ def run_cross_site_validation(nnunet_root_dir, dataset_name_or_id, app_path, app
         print(e)
         mlflow.set_experiment(experiment_id=(mlflow.get_experiment_by_name(experiment_name).experiment_id))
 
-    run_name = f"run_cross_site_validation_{client_name}_Model_{model_name}"
+    run_name = f"run_cross_site_validation_{client_name}_Dataset_{dataset_name_or_id}_Model_{model_name}"
 
     runs = mlflow.search_runs(
     experiment_names=[experiment_name],

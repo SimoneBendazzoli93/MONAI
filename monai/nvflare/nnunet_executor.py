@@ -130,8 +130,7 @@ class nnUNetExecutor(Executor):
         train_extra_configs=None,
         exclude_vars=None,
         continue_training=False,
-        label_dict = None,
-        original_path = None,
+        label_dict = None
     ):
         super().__init__()
 
@@ -160,7 +159,7 @@ class nnUNetExecutor(Executor):
         self.cross_site_validation_task_name = cross_site_validation_task_name
         self.monai_deploy_config = monai_deploy_config
         self.label_dict = label_dict
-        self.original_path = original_path
+
 
     def handle_event(self, event_type: str, fl_ctx: FLContext):
         if event_type == EventType.START_RUN:
@@ -463,7 +462,6 @@ class nnUNetExecutor(Executor):
             tracking_uri=self.tracking_uri,
             nnunet_plans_name=nnunet_plans_name,
             dataset_name=dataset_name,
-            original_path=self.original_path,
         )
         
         outgoing_dxo = DXO(data_kind=DataKind.COLLECTION, data=validation_summary, meta={})
