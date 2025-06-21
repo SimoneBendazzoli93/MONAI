@@ -116,6 +116,23 @@ def get_nnunet_trainer(
                 )
                 raise e
 
+    # Determine device based on pytorch lightning rank if available
+    import os
+    rank = None
+    if "LOCAL_RANK" in os.environ:
+        try:
+            rank = int(os.environ["LOCAL_RANK"])
+        except Exception:
+            rank = None
+    elif "RANK" in os.environ:
+        try:
+            rank = int(os.environ["RANK"])
+        except Exception:
+            rank = None
+
+    if device.startswith("cuda") and rank is not None:
+        device = f"cuda:{rank}"
+
     from nnunetv2.run.run_training import get_trainer_from_args, maybe_load_checkpoint
 
     nnunet_trainer = get_trainer_from_args(
