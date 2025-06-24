@@ -540,8 +540,8 @@ def prepare_bundle(bundle_config, train_extra_configs=None):
     -------
     None
     """
-
-    return prepare_bundle_api(bundle_config, train_extra_configs=train_extra_configs, is_federated=True)
+    is_federated = train_extra_configs.get("is_federated", True)
+    return prepare_bundle_api(bundle_config, train_extra_configs=train_extra_configs, is_federated=is_federated)
 
 
 
@@ -701,7 +701,13 @@ def run_cross_site_validation(nnunet_root_dir, dataset_name_or_id, app_path, app
             mlflow.log_dict(validation_summary_dict, "validation_summary.json")
             for label in validation_summary_dict["mean"]:
                 for metric in validation_summary_dict["mean"][label]:
-                    label_name = labels[label]
+                    label_id = label
+                    if "(" in label:
+                        label_id = label.replace("(", "[").replace(")", "]")
+                    if label_id not in labels:
+                        logging.warning(f"Label {label_id} not found in labels dictionary. Skipping metric logging.")
+                        continue
+                    label_name = labels[label_id]
                     mlflow.log_metric(f"{label_name}_{metric}", float(validation_summary_dict["mean"][label][metric]))
 
     else:
@@ -709,7 +715,13 @@ def run_cross_site_validation(nnunet_root_dir, dataset_name_or_id, app_path, app
             mlflow.log_dict(validation_summary_dict, "validation_summary.json")
             for label in validation_summary_dict["mean"]:
                 for metric in validation_summary_dict["mean"][label]:
-                    label_name = labels[label]
+                    label_id = label
+                    if "(" in label:
+                        label_id = label.replace("(", "[").replace(")", "]")
+                    if label_id not in labels:
+                        logging.warning(f"Label {label_id} not found in labels dictionary. Skipping metric logging.")
+                        continue
+                    label_name = labels[label_id]
                     mlflow.log_metric(f"{label_name}_{metric}", float(validation_summary_dict["mean"][label][metric]))
 
     return validation_summary_dict
