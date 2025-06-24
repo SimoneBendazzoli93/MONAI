@@ -162,7 +162,7 @@ def train(
         mlflow.set_experiment(experiment_id=(mlflow.get_experiment_by_name(experiment_name).experiment_id))
 
     filter = f"""
-    tags."client" = "{client_name}"
+    tags.mlflow.runName = 'run_{client_name}'
     """
 
     runs = mlflow.search_runs(experiment_names=[experiment_name], filter_string=filter, order_by=["start_time DESC"])
