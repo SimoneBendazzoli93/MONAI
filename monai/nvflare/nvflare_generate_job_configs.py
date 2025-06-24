@@ -909,11 +909,11 @@ def train_fl_config(clients, experiment, root_dir, script_dir, nvflare_exec):
     -------
     None
     """
-    task_name = "train_fl_nnunet_bundle"
+    task_name = "train_fl_monet_bundle"
     Path(root_dir).joinpath(task_name).mkdir(parents=True, exist_ok=True)
 
     info = {
-        "description": "Federated Learning with nnUNet-MONAI Bundle",
+        "description": "Federated Learning with MONet Bundle",
         "client_category": "Executor",
         "controller_type": "server",
     }
@@ -1414,7 +1414,7 @@ def generate_configs(client_files, experiment_file, script_dir, job_dir, nvflare
         train_config(clients, experiment, job_dir, script_dir, nvflare_exec)
     if tasks is None or "prepare_bundle" in tasks:
         prepare_bundle_config(clients, experiment, job_dir, script_dir, nvflare_exec)
-    if tasks is None or "train_fl" in tasks:
+    if tasks is None or "train_fl_monet_bundle" in tasks:
         train_fl_config(clients, experiment, job_dir, script_dir, nvflare_exec)
     if tasks is None or "finalize" in tasks:
         finalize_config(clients, experiment, job_dir, script_dir, nvflare_exec)
