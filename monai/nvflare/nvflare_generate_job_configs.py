@@ -1370,7 +1370,7 @@ def cross_site_validation_config(clients, experiment, root_dir, script_dir, nvfl
         ]
     )
 
-def generate_configs(client_files, experiment_file, script_dir, job_dir, nvflare_exec="nvflare"):
+def generate_configs(client_files, experiment_file, script_dir, job_dir, nvflare_exec="nvflare",tasks=None):
     """
     Generate configuration files for NVFlare job.
 
@@ -1386,6 +1386,8 @@ def generate_configs(client_files, experiment_file, script_dir, job_dir, nvflare
         Directory path where the job configurations will be saved.
     nvflare_exec : str, optional
         NVFlare executable command, by default "nvflare".
+    tasks : list of str, optional
+        List of tasks to be configured. If None, all tasks will be configured.
 
     Returns
     -------
@@ -1400,12 +1402,21 @@ def generate_configs(client_files, experiment_file, script_dir, job_dir, nvflare
     with open(experiment_file) as f:
         experiment = yaml.safe_load(f)
 
-    check_client_packages_config(clients, experiment, job_dir, script_dir, nvflare_exec)
-    prepare_config(clients, experiment, job_dir, script_dir, nvflare_exec)
-    plan_and_preprocess_config(clients, experiment, job_dir, script_dir, nvflare_exec)
-    preprocess_config(clients, experiment, job_dir, script_dir, nvflare_exec)
-    train_config(clients, experiment, job_dir, script_dir, nvflare_exec)
-    prepare_bundle_config(clients, experiment, job_dir, script_dir, nvflare_exec)
-    train_fl_config(clients, experiment, job_dir, script_dir, nvflare_exec)
-    finalize_config(clients, experiment, job_dir, script_dir, nvflare_exec)
-    cross_site_validation_config(clients, experiment, job_dir, script_dir, nvflare_exec)
+    if tasks is None or "check_client_packages" in tasks:
+        check_client_packages_config(clients, experiment, job_dir, script_dir, nvflare_exec)
+    if tasks is None or "prepare" in tasks:
+        prepare_config(clients, experiment, job_dir, script_dir, nvflare_exec)
+    if tasks is None or "plan_and_preprocess" in tasks:
+        plan_and_preprocess_config(clients, experiment, job_dir, script_dir, nvflare_exec)
+    if tasks is None or "preprocess" in tasks:
+        preprocess_config(clients, experiment, job_dir, script_dir, nvflare_exec)
+    if tasks is None or "train" in tasks:
+        train_config(clients, experiment, job_dir, script_dir, nvflare_exec)
+    if tasks is None or "prepare_bundle" in tasks:
+        prepare_bundle_config(clients, experiment, job_dir, script_dir, nvflare_exec)
+    if tasks is None or "train_fl" in tasks:
+        train_fl_config(clients, experiment, job_dir, script_dir, nvflare_exec)
+    if tasks is None or "finalize" in tasks:
+        finalize_config(clients, experiment, job_dir, script_dir, nvflare_exec)
+    if tasks is None or "cross_site_validation" in tasks:
+        cross_site_validation_config(clients, experiment, job_dir, script_dir, nvflare_exec)
