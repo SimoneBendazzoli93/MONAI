@@ -705,8 +705,9 @@ def train_config(clients, experiment, root_dir, script_dir, nvflare_exec):
                 }
             ],
         }
-        if "continue_training" in experiment:
-            client["executors"][0]["executor"]["args"]["continue_training"] = experiment["continue_training"]
+        if "bundle_extra_config" in experiment:
+            if "resume_epoch" in experiment["bundle_extra_config"]:
+                client["executors"][0]["executor"]["args"]["continue_training"] = True
         if "nnunet_plans" in experiment:
             client["executors"][0]["executor"]["args"]["nnunet_config"]["nnunet_plans"] = experiment["nnunet_plans"]
 
