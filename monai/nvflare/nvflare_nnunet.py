@@ -149,7 +149,7 @@ def train(
     
     train_api(nnunet_root_dir, dataset_name_or_id, experiment_name, trainer_class_name, run_with_bundle, bundle_root, skip_training, continue_training, fold, tracking_uri, client_name, resume_epoch)
 
-    validation_summary_dict, labels = validation_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name, nnunet_plans_name, fold)
+    validation_summary_dict, labels = validation_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name, nnunet_plans_name, fold, skip_prediction=True)
     if mlflow_token is not None:
         os.environ["MLFLOW_TRACKING_TOKEN"] = mlflow_token
     if tracking_uri is not None:
