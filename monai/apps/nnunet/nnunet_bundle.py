@@ -291,8 +291,8 @@ class ModelnnUNetWrapper(torch.nn.Module):
             - The output tensor is concatenated along the batch dimension and returned as a MetaTensor with the same metadata.
         """
         if isinstance(x, MetaTensor):
-            if "pixdim" in x.meta and "dim" in x.meta:
-                if x.meta["dim"].ndim == 1:
+            if "pixdim" in x.meta:
+                if x.meta["pixdim"].ndim == 1:
                     properties_or_list_of_properties = {"spacing": x.meta["pixdim"][1:4].tolist()}
                 else:
                     properties_or_list_of_properties = {"spacing": x.meta["pixdim"][0][1:4].numpy().tolist()}
