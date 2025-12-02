@@ -417,13 +417,13 @@ def compute_validation_metrics(gt_folder, pred_folder, n_labels=1):
     return summary
 
 
-def plan_and_preprocess_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name="nnUNetTrainer", nnunet_plans_name="nnUNetPlans"):
+def plan_and_preprocess_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name="nnUNetTrainer", nnunet_plans_name="nnUNetPlans", config="3d_fullres"):
     data_src_cfg = os.path.join(nnunet_root_dir, f"Task{dataset_name_or_id}_data_src_cfg.yaml")
 
     runner = nnUNetV2Runner(input_config=data_src_cfg, trainer_class_name=trainer_class_name, work_dir=nnunet_root_dir)
 
     runner.plan_and_process(
-        npfp=2, verify_dataset_integrity=True, c=["3d_fullres"], n_proc=[2], overwrite_plans_name=nnunet_plans_name
+        npfp=2, verify_dataset_integrity=True, c=[config], n_proc=[2], overwrite_plans_name=nnunet_plans_name
     )
 
     preprocessed_folder = runner.nnunet_preprocessed

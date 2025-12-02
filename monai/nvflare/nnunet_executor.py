@@ -294,6 +294,7 @@ class nnUNetExecutor(Executor):
             nnunet_plans_name=nnunet_plans_name,
             trainer_class_name=nnunet_trainer_name,
             dataset_name=dataset_name,
+            config=self.nnunet_config.get("config", "3d_fullres"),
         )
 
         outgoing_dxo = DXO(data_kind=DataKind.COLLECTION, data=nnunet_plans, meta={})
