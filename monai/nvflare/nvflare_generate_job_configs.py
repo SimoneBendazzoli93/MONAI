@@ -150,7 +150,7 @@ def prepare_config(clients, experiment, root_dir, script_dir, nvflare_exec):
             client["executors"][0]["executor"]["args"]["nnunet_config"]["nnunet_trainer"] = experiment["nnunet_trainer"]
         
         if "nnunet_config" in experiment:
-            client["executors"][0]["executor"]["args"]["nnunet_config"]["config"] = experiment["nnunet_config"]
+            client["executors"][0]["executor"]["args"]["nnunet_config"]["nnunet_config"] = experiment["nnunet_config"]
 
         Path(root_dir).joinpath(task_name).joinpath(f"{task_name}-client-{client_id}").mkdir(
             parents=True, exist_ok=True
@@ -417,7 +417,7 @@ def plan_and_preprocess_config(clients, experiment, root_dir, script_dir, nvflar
             client["executors"][0]["executor"]["args"]["nnunet_config"]["nnunet_trainer"] = experiment["nnunet_trainer"]
             
         if "nnunet_config" in experiment:
-            client["executors"][0]["executor"]["args"]["nnunet_config"]["config"] = experiment["nnunet_config"]
+            client["executors"][0]["executor"]["args"]["nnunet_config"]["nnunet_config"] = experiment["nnunet_config"]
 
         Path(root_dir).joinpath(task_name).joinpath(f"{task_name}-client-{client_id}").mkdir(
             parents=True, exist_ok=True
@@ -569,7 +569,7 @@ def preprocess_config(clients, experiment, root_dir, script_dir, nvflare_exec):
             client["executors"][0]["executor"]["args"]["nnunet_config"]["nnunet_trainer"] = experiment["nnunet_trainer"]
 
         if "nnunet_config" in experiment:
-            client["executors"][0]["executor"]["args"]["nnunet_config"]["config"] = experiment["nnunet_config"]
+            client["executors"][0]["executor"]["args"]["nnunet_config"]["nnunet_config"] = experiment["nnunet_config"]
 
         Path(root_dir).joinpath(task_name).joinpath(f"{task_name}-client-{client_id}").mkdir(
             parents=True, exist_ok=True
@@ -1196,7 +1196,7 @@ def finalize_config(clients, experiment, root_dir, script_dir, nvflare_exec):
             client["executors"][0]["executor"]["args"]["nnunet_config"]["nnunet_trainer"] = experiment["nnunet_trainer"]
             
         if "nnunet_config" in experiment:
-            client["executors"][0]["executor"]["args"]["nnunet_config"]["config"] = experiment["nnunet_config"]
+            client["executors"][0]["executor"]["args"]["nnunet_config"]["nnunet_config"] = experiment["nnunet_config"]
 
         if "bundle_root" in clients[client_id]:
             client["executors"][0]["executor"]["args"]["bundle_root"] = clients[client_id]["bundle_root"]
@@ -1359,7 +1359,7 @@ def cross_site_validation_config(clients, experiment, root_dir, script_dir, nvfl
             client["executors"][0]["executor"]["args"]["nnunet_config"]["nnunet_trainer"] = experiment["nnunet_trainer"]
             
         if "nnunet_config" in experiment:
-            client["executors"][0]["executor"]["args"]["nnunet_config"]["config"] = experiment["nnunet_config"]
+            client["executors"][0]["executor"]["args"]["nnunet_config"]["nnunet_config"] = experiment["nnunet_config"]
 
         if "bundle_root" in clients[client_id]:
             client["executors"][0]["executor"]["args"]["bundle_root"] = clients[client_id]["bundle_root"]

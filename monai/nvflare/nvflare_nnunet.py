@@ -253,7 +253,7 @@ def plan_and_preprocess(
     nnunet_plans_name="nnUNetPlans",
     trainer_class_name="nnUNetTrainer",
     dataset_name=None,
-    config="3d_fullres",
+    nnunet_config="3d_fullres",
 ):
     """
     Plan and preprocess the dataset using nnUNetV2Runner and log the plans to MLflow.
@@ -276,7 +276,7 @@ def plan_and_preprocess(
         The name of the nnUNet plans (default is "nnUNetPlans").
     trainer_class_name : str, optional
         The name of the nnUNet trainer class (default is "nnUNetTrainer").
-    config : str, optional
+    nnunet_config : str, optional
         The configuration to use for the nnUNet plans (default is "3d_fullres").
 
     Returns
@@ -290,7 +290,7 @@ def plan_and_preprocess(
         dataset_name_or_id=dataset_name_or_id,
         trainer_class_name=trainer_class_name,
         nnunet_plans_name=nnunet_plans_name,
-        config=config,
+        nnunet_config=nnunet_config,
     )
 
     if mlflow_token is not None:

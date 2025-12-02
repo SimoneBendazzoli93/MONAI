@@ -273,7 +273,7 @@ def prepare_data_folder_api(data_dir,
     return data_list
 
 
-def cross_site_evaluation_api(nnunet_root_dir, dataset_name_or_id, app_path, app_model_path, app_output_path, fold=0, trainer_class_name="nnUNetTrainer", nnunet_plans_name="nnUNetPlans", skip_prediction=False):
+def cross_site_evaluation_api(nnunet_root_dir, dataset_name_or_id, app_path, app_model_path, app_output_path, fold=0, trainer_class_name="nnUNetTrainer", nnunet_plans_name="nnUNetPlans", skip_prediction=False, nnunet_config="3d_fullres"):
     data_src_cfg = os.path.join(nnunet_root_dir, f"Task{dataset_name_or_id}_data_src_cfg.yaml")
 
     runner = nnUNetV2Runner(input_config=data_src_cfg, trainer_class_name=trainer_class_name, work_dir=nnunet_root_dir)
@@ -342,7 +342,7 @@ def cross_site_evaluation_api(nnunet_root_dir, dataset_name_or_id, app_path, app
     dataset_file = os.path.join(
             runner.nnunet_results,
             runner.dataset_name,
-            f"{trainer_class_name}__{nnunet_plans_name}__3d_fullres",
+            f"{trainer_class_name}__{nnunet_plans_name}__{nnunet_config}",
             "dataset.json",
         )
 
@@ -417,13 +417,13 @@ def compute_validation_metrics(gt_folder, pred_folder, n_labels=1):
     return summary
 
 
-def plan_and_preprocess_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name="nnUNetTrainer", nnunet_plans_name="nnUNetPlans", config="3d_fullres"):
+def plan_and_preprocess_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name="nnUNetTrainer", nnunet_plans_name="nnUNetPlans", nnunet_config="3d_fullres"):
     data_src_cfg = os.path.join(nnunet_root_dir, f"Task{dataset_name_or_id}_data_src_cfg.yaml")
 
     runner = nnUNetV2Runner(input_config=data_src_cfg, trainer_class_name=trainer_class_name, work_dir=nnunet_root_dir)
 
     runner.plan_and_process(
-        npfp=2, verify_dataset_integrity=True, c=[config], n_proc=[2], overwrite_plans_name=nnunet_plans_name
+        npfp=2, verify_dataset_integrity=True, c=[nnunet_config], n_proc=[2], overwrite_plans_name=nnunet_plans_name
     )
 
     preprocessed_folder = runner.nnunet_preprocessed
@@ -615,7 +615,7 @@ def prepare_bundle_api(bundle_config, train_extra_configs=None, is_federated=Fal
     
     return {"evaluate_config": evaluate_config, "train_config": train_config}
 
-def train_api(nnunet_root_dir, dataset_name_or_id, experiment_name, trainer_class_name="nnUNetTrainer", run_with_bundle=False, bundle_root=None, skip_training=False, continue_training=False, fold=0, tracking_uri=None, client_name=None, resume_epoch=None):
+def train_api(nnunet_root_dir, dataset_name_or_id, experiment_name, trainer_class_name="nnUNetTrainer", run_with_bundle=False, bundle_root=None, skip_training=False, continue_training=False, fold=0, tracking_uri=None, client_name=None, resume_epoch=None, nnunet_config="3d_fullres"):
     
     data_src_cfg = os.path.join(nnunet_root_dir, f"Task{dataset_name_or_id}_data_src_cfg.yaml")
     runner = nnUNetV2Runner(input_config=data_src_cfg, trainer_class_name=trainer_class_name, work_dir=nnunet_root_dir)
@@ -623,9 +623,9 @@ def train_api(nnunet_root_dir, dataset_name_or_id, experiment_name, trainer_clas
     if not skip_training:
         if not run_with_bundle:
             if continue_training:
-                runner.train_single_model(config="3d_fullres", fold=fold, c="")
+                runner.train_single_model(config=nnunet_config, fold=fold, c="")
             else:
-                runner.train_single_model(config="3d_fullres", fold=fold)
+                runner.train_single_model(config=nnunet_config, fold=fold)
         else:
             os.environ["BUNDLE_ROOT"] = bundle_root
             os.environ["PYTHONPATH"] = os.environ["PYTHONPATH"] + ":" + bundle_root
@@ -645,18 +645,18 @@ def train_api(nnunet_root_dir, dataset_name_or_id, experiment_name, trainer_clas
             )
     nnunet_config = {"dataset_name_or_id": dataset_name_or_id, "nnunet_trainer": trainer_class_name}
     convert_monai_bundle_to_nnunet(nnunet_config, bundle_root)
-    runner.train_single_model(config="3d_fullres", fold=fold, val="")
+    runner.train_single_model(config=nnunet_config, fold=fold, val="")
 
 
-def validation_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name="nnUNetTrainer", nnunet_plans_name="nnUNetPlans", fold=0, skip_prediction=False):
+def validation_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name="nnUNetTrainer", nnunet_plans_name="nnUNetPlans", fold=0, skip_prediction=False, nnunet_config="3d_fullres"):
     data_src_cfg = os.path.join(nnunet_root_dir, f"Task{dataset_name_or_id}_data_src_cfg.yaml")
     runner = nnUNetV2Runner(input_config=data_src_cfg, trainer_class_name=trainer_class_name, work_dir=nnunet_root_dir)
     if not skip_prediction:
-        runner.train_single_model(config="3d_fullres", fold=fold, val="")
+        runner.train_single_model(config=nnunet_config, fold=fold, val="")
     dataset_file = os.path.join(
         runner.nnunet_results,
         runner.dataset_name,
-        f"{trainer_class_name}__{nnunet_plans_name}__3d_fullres",
+        f"{trainer_class_name}__{nnunet_plans_name}__{nnunet_config}",
         "dataset.json",
     )
 
@@ -666,12 +666,12 @@ def validation_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name="nnUN
         labels = {str(v): k for k, v in labels.items()}
 
     validation_summary_dict = compute_validation_metrics(str(Path(runner.nnunet_raw).joinpath(runner.dataset_name, "labelsTr")),
-                                   str(Path(runner.nnunet_results).joinpath(runner.dataset_name,f"{trainer_class_name}__{nnunet_plans_name}__3d_fullres", f"fold_{fold}", "validation")),
+                                   str(Path(runner.nnunet_results).joinpath(runner.dataset_name,f"{trainer_class_name}__{nnunet_plans_name}__{nnunet_config}", f"fold_{fold}", "validation")),
                                    len(labels)-1)
     
     return validation_summary_dict, labels
 
-def finalize_bundle_api(nnunet_root_dir, bundle_root, trainer_class_name="nnUNetTrainer", fold=0, is_federated=False):
+def finalize_bundle_api(nnunet_root_dir, bundle_root, trainer_class_name="nnUNetTrainer", fold=0, is_federated=False, nnunet_config="3d_fullres"):
     if nnunet_root_dir is None:
         raise ValueError("nnunet_root_dir must be provided if validate_with_nnunet is True")
     if not Path(bundle_root).joinpath("models", "plans.json").exists():
@@ -698,7 +698,7 @@ def finalize_bundle_api(nnunet_root_dir, bundle_root, trainer_class_name="nnUNet
             "trainer_name": trainer_class_name,
             "inference_allowed_mirroring_axes": (0, 1, 2),
             "init_args": {
-                "configuration": "3d_fullres",
+                "configuration": nnunet_config,
         }
         }
         
