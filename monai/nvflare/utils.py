@@ -641,7 +641,8 @@ def train_api(nnunet_root_dir, dataset_name_or_id, experiment_name, trainer_clas
                 tracking_uri=tracking_uri,
                 fold_id=fold,
                 nnunet_root_folder=nnunet_root_dir,
-                reload_checkpoint_epoch=resume_epoch
+                reload_checkpoint_epoch=resume_epoch,
+                nnunet_configuration=nnunet_config
             )
     nnunet_config = {"dataset_name_or_id": dataset_name_or_id, "nnunet_trainer": trainer_class_name}
     convert_monai_bundle_to_nnunet(nnunet_config, bundle_root)
