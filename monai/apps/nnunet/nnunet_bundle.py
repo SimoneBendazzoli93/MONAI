@@ -556,8 +556,8 @@ def convert_monai_bundle_to_nnunet(nnunet_config: dict, bundle_root_folder: str,
     if "nnunet_plans" in nnunet_config:
         nnunet_plans = nnunet_config["nnunet_plans"]
 
-    if "nnunet_configuration" in nnunet_config:
-        nnunet_configuration = nnunet_config["nnunet_configuration"]
+    if "nnunet_config" in nnunet_config:
+        nnunet_configuration = nnunet_config["nnunet_config"]
 
     from nnunetv2.training.logging.nnunet_logger import nnUNetLogger
     from nnunetv2.utilities.dataset_name_id_conversion import maybe_convert_to_dataset_name
