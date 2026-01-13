@@ -535,6 +535,7 @@ def convert_monai_bundle_to_nnunet(nnunet_config: dict, bundle_root_folder: str,
         - "dataset_name_or_id": str, name or ID of the dataset.
         - "nnunet_trainer": str, optional, name of the nnU-Net trainer (default is "nnUNetTrainer").
         - "nnunet_plans": str, optional, name of the nnU-Net plans (default is "nnUNetPlans").
+        - "nnunet_config": str, optional, name of the nnU-Net configuration (default is "3d_fullres").
     bundle_root_folder : str
         Path to the root folder of the MONAI bundle.
     fold : int, optional
@@ -548,12 +549,15 @@ def convert_monai_bundle_to_nnunet(nnunet_config: dict, bundle_root_folder: str,
 
     nnunet_trainer: str = "nnUNetTrainer"
     nnunet_plans: str = "nnUNetPlans"
-
+    nnunet_configuration: str = "3d_fullres"
     if "nnunet_trainer" in nnunet_config:
         nnunet_trainer = nnunet_config["nnunet_trainer"]
 
     if "nnunet_plans" in nnunet_config:
         nnunet_plans = nnunet_config["nnunet_plans"]
+
+    if "nnunet_configuration" in nnunet_config:
+        nnunet_configuration = nnunet_config["nnunet_configuration"]
 
     from nnunetv2.training.logging.nnunet_logger import nnUNetLogger
     from nnunetv2.utilities.dataset_name_id_conversion import maybe_convert_to_dataset_name
@@ -574,7 +578,7 @@ def convert_monai_bundle_to_nnunet(nnunet_config: dict, bundle_root_folder: str,
 
     nnunet_model_folder: Path = Path(os.environ["nnUNet_results"]).joinpath(
         maybe_convert_to_dataset_name(nnunet_config["dataset_name_or_id"]),
-        f"{nnunet_trainer}__{nnunet_plans}__3d_fullres",
+        f"{nnunet_trainer}__{nnunet_plans}__{nnunet_configuration}",
     )
 
     nnunet_preprocess_model_folder: Path = Path(os.environ["nnUNet_preprocessed"]).joinpath(
