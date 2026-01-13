@@ -637,7 +637,7 @@ def train_api(nnunet_root_dir, dataset_name_or_id, experiment_name, trainer_clas
                 bundle_root=bundle_root,
                 nnunet_trainer_class_name=trainer_class_name,
                 mlflow_experiment_name=experiment_name,
-                mlflow_run_name="run_" + client_name,
+                mlflow_run_name="run_" + f"Task{dataset_name_or_id}__{trainer_class_name}__{nnunet_config}__fold_{fold}",
                 tracking_uri=tracking_uri,
                 fold_id=fold,
                 nnunet_root_folder=nnunet_root_dir,
