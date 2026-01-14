@@ -194,7 +194,7 @@ class ModelnnUNetWrapper(torch.nn.Module):
     restoring network architecture, and setting up the predictor for inference.
     """
 
-    def __init__(self, predictor: object, model_folder: Union[str, Path], model_name: str = "model.pt", dataset_json: dict = None, plans: dict = None, nnunet_config: dict = None):  # type: ignore
+    def __init__(self, predictor: object, model_folder: str | Path, model_name: str = "model.pt", dataset_json: dict = None, plans: dict = None, nnunet_config: dict = None):  # type: ignore
         super().__init__()
         self.predictor = predictor
 
@@ -333,7 +333,7 @@ class ModelnnUNetWrapper(torch.nn.Module):
         return MetaTensor(out_tensor, meta=x.meta)
 
 
-def get_nnunet_monai_predictor(model_folder: Union[str, Path], model_name: str = "model.pt", dataset_json: dict = None, plans: dict = None, nnunet_config: dict = None) -> ModelnnUNetWrapper:
+def get_nnunet_monai_predictor(model_folder: str | Path, model_name: str = "model.pt", dataset_json: dict = None, plans: dict = None, nnunet_config: dict = None) -> ModelnnUNetWrapper:
     """
     Initializes and returns a `nnUNetMONAIModelWrapper` containing the corresponding `nnUNetPredictor`.
     The model folder should contain the following files, created during training:
