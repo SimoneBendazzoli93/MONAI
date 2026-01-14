@@ -279,9 +279,9 @@ def cross_site_evaluation_api(nnunet_root_dir, dataset_name_or_id, app_path, app
     runner = nnUNetV2Runner(input_config=data_src_cfg, trainer_class_name=trainer_class_name, work_dir=nnunet_root_dir)
 
     with open(Path(nnunet_root_dir).joinpath(f"Task{dataset_name_or_id}_data_src_cfg.yaml"), "r") as f:
-        nnunet_config = yaml.safe_load(f)
+        nnunet_config_dict = yaml.safe_load(f)
 
-    data_root_dir = nnunet_config["dataroot"]
+    data_root_dir = nnunet_config_dict["dataroot"]
     #data_list_file = nnunet_config["datalist"]
     from nnunetv2.utilities.dataset_name_id_conversion import maybe_convert_to_dataset_name
 

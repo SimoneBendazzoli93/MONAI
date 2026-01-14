@@ -107,6 +107,7 @@ def train(
     continue_training=False,
     resume_epoch="latest",
     skip_training=False,
+    nnunet_config="3d_fullres",
 ):
     """
 
@@ -140,6 +141,10 @@ def train(
         Whether to continue training from a checkpoint, by default False.
     resume_epoch : int, optional
         Epoch to resume training from, by default "latest".
+    skip_training : bool, optional
+        Whether to skip training, by default False.
+    nnunet_config : str, optional
+        Configuration to use for nnUNet, by default "3d_fullres".
 
     Returns
     -------
@@ -147,9 +152,9 @@ def train(
         Dictionary containing validation summary metrics.
     """
     
-    train_api(nnunet_root_dir, dataset_name_or_id, experiment_name, trainer_class_name, run_with_bundle, bundle_root, skip_training, continue_training, fold, tracking_uri, client_name, resume_epoch)
+    train_api(nnunet_root_dir, dataset_name_or_id, experiment_name, trainer_class_name, run_with_bundle, bundle_root, skip_training, continue_training, fold, tracking_uri, client_name, resume_epoch, nnunet_config)
 
-    validation_summary_dict, labels = validation_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name, nnunet_plans_name, fold, skip_prediction=True)
+    validation_summary_dict, labels = validation_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name, nnunet_plans_name, fold, skip_prediction=True, nnunet_config=nnunet_config)
     if mlflow_token is not None:
         os.environ["MLFLOW_TRACKING_TOKEN"] = mlflow_token
     if tracking_uri is not None:
@@ -162,7 +167,7 @@ def train(
         mlflow.set_experiment(experiment_id=(mlflow.get_experiment_by_name(experiment_name).experiment_id))
 
     filter = f"""
-    tags.mlflow.runName = 'run_{client_name}'
+    tags.mlflow.runName = 'run_{client_name}_{trainer_class_name}_{nnunet_plans_name}_{nnunet_config}'
     """
 
     runs = mlflow.search_runs(experiment_names=[experiment_name], filter_string=filter, order_by=["start_time DESC"])
@@ -170,7 +175,7 @@ def train(
     
 
     if len(runs) == 0:
-        with mlflow.start_run(run_name=f"run_{client_name}", tags={"client": client_name}):
+        with mlflow.start_run(run_name=f"run_{client_name}_{trainer_class_name}_{nnunet_plans_name}_{nnunet_config}", tags={"client": client_name}):
             mlflow.log_dict(validation_summary_dict, "validation_summary.json")
             for label in validation_summary_dict["mean"]:
                 for metric in validation_summary_dict["mean"][label]:
@@ -188,7 +193,7 @@ def train(
     return validation_summary_dict
 
 
-def preprocess(nnunet_root_dir, dataset_name_or_id, nnunet_plans_file_path=None, trainer_class_name="nnUNetTrainer"):
+def preprocess(nnunet_root_dir, dataset_name_or_id, nnunet_plans_file_path=None, trainer_class_name="nnUNetTrainer", nnunet_config="3d_fullres"):
     """
     Preprocess the dataset for nnUNet training.
 
@@ -202,7 +207,8 @@ def preprocess(nnunet_root_dir, dataset_name_or_id, nnunet_plans_file_path=None,
         The file path to the nnUNet plans file. If None, default plans will be used. Default is None.
     trainer_class_name : str, optional
         The name of the trainer class to use. Default is "nnUNetTrainer".
-
+    nnunet_config : str, optional
+        The configuration to use for the nnUNet plans (default is "3d_fullres").
     Returns
     -------
     dict
@@ -238,7 +244,7 @@ def preprocess(nnunet_root_dir, dataset_name_or_id, nnunet_plans_file_path=None,
             )
 
     runner.extract_fingerprints(npfp=2, verify_dataset_integrity=True)
-    runner.preprocess(c=["3d_fullres"], n_proc=[2], overwrite_plans_name=nnunet_plans_name)
+    runner.preprocess(c=[nnunet_config], n_proc=[2], overwrite_plans_name=nnunet_plans_name)
 
     return {"original_dataset_name": str(nnunet_plans["original_dataset_name"]), "dataset_name": str(nnunet_plans["dataset_name"])}
 
@@ -304,7 +310,7 @@ def plan_and_preprocess(
         print(e)
         mlflow.set_experiment(experiment_id=(mlflow.get_experiment_by_name(experiment_name).experiment_id))
 
-    run_name = f"run_plan_and_preprocess_{client_name}"
+    run_name = f"run_plan_and_preprocess_{client_name}_{trainer_class_name}_{nnunet_plans_name}_{nnunet_config}"
 
     runs = mlflow.search_runs(
     experiment_names=[experiment_name],
@@ -316,7 +322,7 @@ def plan_and_preprocess(
         tags["dataset_name"] = dataset_name
 
     if len(runs) == 0:
-        with mlflow.start_run(run_name=f"run_plan_and_preprocess_{client_name}", tags=tags):
+        with mlflow.start_run(run_name=f"run_plan_and_preprocess_{client_name}_{trainer_class_name}_{nnunet_plans_name}_{nnunet_config}", tags=tags):
             mlflow.log_dict(nnunet_plans, nnunet_plans_name + ".json")
 
     else:
@@ -406,7 +412,7 @@ def prepare_data_folder(
         mlflow.set_experiment(experiment_id=(mlflow.get_experiment_by_name(experiment_name).experiment_id))
 
 
-    run_name = f"run_prepare_{client_name}"
+    run_name = f"run_prepare_{client_name}_{trainer_class_name}"
 
     runs = mlflow.search_runs(
     experiment_names=[experiment_name],
@@ -418,7 +424,7 @@ def prepare_data_folder(
         tags["dataset_name"] = dataset_name
     try:
         if len(runs) == 0:
-            with mlflow.start_run(run_name=f"run_prepare_{client_name}", tags=tags):
+            with mlflow.start_run(run_name=f"run_prepare_{client_name}_{trainer_class_name}", tags=tags):
                 mlflow.log_table(pd.DataFrame.from_records(data_list["training"]), f"{client_name}_train.json")
         else:
             with mlflow.start_run(run_id=runs.iloc[0].run_id, tags=tags):
@@ -553,7 +559,7 @@ def prepare_bundle(bundle_config, train_extra_configs=None):
 def finalize_bundle(bundle_root, nnunet_root_dir=None, validate_with_nnunet=True,
                     experiment_name=None, client_name=None, tracking_uri=None,
                     dataset_name_or_id=None, trainer_class_name="nnUNetTrainer",
-                    nnunet_plans_name="nnUNetPlans", fold=0, mlflow_token=None, dataset_name=None):
+                    nnunet_plans_name="nnUNetPlans", fold=0, mlflow_token=None, dataset_name=None, nnunet_config="3d_fullres"):
     """
     Finalizes a MONAI bundle by converting model and dataset configurations to nnUNet format,
     saving checkpoints, and optionally validating the model using nnUNet.
@@ -582,7 +588,8 @@ def finalize_bundle(bundle_root, nnunet_root_dir=None, validate_with_nnunet=True
         Fold number for nnUNet training and validation. Default is 0.
     mlflow_token : str, optional
         Token for authenticating with the MLflow tracking server.
-    
+    nnunet_config : str, optional
+        Configuration to use for nnUNet, by default "3d_fullres".
     Returns
     -------
     dict
@@ -597,14 +604,14 @@ def finalize_bundle(bundle_root, nnunet_root_dir=None, validate_with_nnunet=True
         trains a single model, and logs validation metrics to MLflow.
     - The function creates and saves nnUNet-compatible checkpoints in the `models` directory.
     """
-    finalize_bundle_api(nnunet_root_dir, bundle_root, trainer_class_name, fold, is_federated=True)
+    finalize_bundle_api(nnunet_root_dir, bundle_root, trainer_class_name, fold, is_federated=True, nnunet_config=nnunet_config)
    
     
     if validate_with_nnunet:
-        nnunet_config = {"dataset_name_or_id": dataset_name_or_id, "nnunet_trainer": trainer_class_name}
+        nnunet_config_dict = {"dataset_name_or_id": dataset_name_or_id, "nnunet_trainer": trainer_class_name, "nnunet_config": nnunet_config}
         data_src_cfg = os.path.join(nnunet_root_dir, f"Task{dataset_name_or_id}_data_src_cfg.yaml")
         runner = nnUNetV2Runner(input_config=data_src_cfg, trainer_class_name=trainer_class_name, work_dir=nnunet_root_dir)
-        convert_monai_bundle_to_nnunet(nnunet_config, bundle_root)
+        convert_monai_bundle_to_nnunet(nnunet_config_dict, bundle_root)
         validation_summary_dict, labels = validation_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name, nnunet_plans_name, fold)
         
         
@@ -619,7 +626,7 @@ def finalize_bundle(bundle_root, nnunet_root_dir=None, validate_with_nnunet=True
             print(e)
             mlflow.set_experiment(experiment_id=(mlflow.get_experiment_by_name("FedLearning-"+experiment_name).experiment_id))
 
-        run_name = f"run_validation_{client_name}"
+        run_name = f"run_validation_{client_name}_{trainer_class_name}_{nnunet_plans_name}_{nnunet_config}"
 
         runs = mlflow.search_runs(
         experiment_names=["FedLearning-"+experiment_name],
@@ -631,7 +638,7 @@ def finalize_bundle(bundle_root, nnunet_root_dir=None, validate_with_nnunet=True
             tags["dataset_name"] = dataset_name
 
         if len(runs) == 0:
-            with mlflow.start_run(run_name=f"run_validation_{client_name}", tags=tags):
+            with mlflow.start_run(run_name=f"run_validation_{client_name}_{trainer_class_name}_{nnunet_plans_name}_{nnunet_config}", tags=tags):
                 mlflow.log_dict(validation_summary_dict, "validation_summary.json")
                 for label in validation_summary_dict["mean"]:
                     for metric in validation_summary_dict["mean"][label]:
@@ -663,7 +670,7 @@ def finalize_bundle(bundle_root, nnunet_root_dir=None, validate_with_nnunet=True
 
 def run_cross_site_validation(nnunet_root_dir, dataset_name_or_id, app_path, app_model_path, app_output_path, model_name, trainer_class_name="nnUNetTrainer", fold=0,
                     experiment_name=None, client_name=None, tracking_uri=None,
-                    nnunet_plans_name="nnUNetPlans", mlflow_token=None, skip_prediction=False, dataset_name=None):
+                    nnunet_plans_name="nnUNetPlans", mlflow_token=None, skip_prediction=False, dataset_name=None, nnunet_config="3d_fullres"):
 
     validation_summary_dict, labels = cross_site_evaluation_api(
         nnunet_root_dir,
@@ -675,7 +682,7 @@ def run_cross_site_validation(nnunet_root_dir, dataset_name_or_id, app_path, app
         fold=fold,
         nnunet_plans_name=nnunet_plans_name,
         skip_prediction=skip_prediction,
-
+        nnunet_config=nnunet_config
     )
     if mlflow_token is not None:
         os.environ["MLFLOW_TRACKING_TOKEN"] = mlflow_token
@@ -688,7 +695,7 @@ def run_cross_site_validation(nnunet_root_dir, dataset_name_or_id, app_path, app
         print(e)
         mlflow.set_experiment(experiment_id=(mlflow.get_experiment_by_name(experiment_name).experiment_id))
 
-    run_name = f"run_cross_site_validation_{client_name}_Dataset_{dataset_name_or_id}_Model_{model_name}"
+    run_name = f"run_cross_site_validation_{client_name}_Dataset_{dataset_name_or_id}_Model_{model_name}_{trainer_class_name}_{nnunet_plans_name}_{nnunet_config}"
 
     runs = mlflow.search_runs(
     experiment_names=[experiment_name],

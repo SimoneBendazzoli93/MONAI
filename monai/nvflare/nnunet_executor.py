@@ -323,6 +323,7 @@ class nnUNetExecutor(Executor):
             dataset_name_or_id,
             nnunet_plans_file_path=Path(self.custom_app_dir).joinpath(f"{nnunet_plans_name}.json"),
             trainer_class_name=nnunet_trainer_name,
+            nnunet_config=self.nnunet_config.get("nnunet_config", "3d_fullres")
         )
         outgoing_dxo = DXO(data_kind=DataKind.COLLECTION, data=nnunet_plans, meta={})
         return outgoing_dxo.to_shareable()
@@ -356,7 +357,8 @@ class nnUNetExecutor(Executor):
             dataset_name_or_id=dataset_name_or_id,
             run_with_bundle=True if self.bundle_root is not None else False,
             bundle_root=self.bundle_root,
-            continue_training=self.continue_training
+            continue_training=self.continue_training,
+            nnunet_config=self.nnunet_config.get("nnunet_config", "3d_fullres")
         )
         outgoing_dxo = DXO(data_kind=DataKind.COLLECTION, data=validation_summary, meta={})
         return outgoing_dxo.to_shareable()
@@ -427,6 +429,7 @@ class nnUNetExecutor(Executor):
             nnunet_plans_name=nnunet_plans_name,
             dataset_name_or_id=dataset_name_or_id,
             dataset_name=dataset_name,
+            nnunet_config=self.nnunet_config.get("nnunet_config", "3d_fullres")
         )
         outgoing_dxo = DXO(data_kind=DataKind.COLLECTION, data=validation_summary, meta={})
         return outgoing_dxo.to_shareable()
@@ -463,6 +466,7 @@ class nnUNetExecutor(Executor):
             tracking_uri=self.tracking_uri,
             nnunet_plans_name=nnunet_plans_name,
             dataset_name=dataset_name,
+            nnunet_config=self.nnunet_config.get("nnunet_config", "3d_fullres")
         )
         
         outgoing_dxo = DXO(data_kind=DataKind.COLLECTION, data=validation_summary, meta={})
