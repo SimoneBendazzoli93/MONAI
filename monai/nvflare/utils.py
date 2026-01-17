@@ -645,7 +645,7 @@ def train_api(nnunet_root_dir, dataset_name_or_id, experiment_name, trainer_clas
                 nnunet_configuration=nnunet_config
             )
     nnunet_config_dict = {"dataset_name_or_id": dataset_name_or_id, "nnunet_trainer": trainer_class_name, "nnunet_config": nnunet_config}
-    convert_monai_bundle_to_nnunet(nnunet_config_dict, bundle_root)
+    convert_monai_bundle_to_nnunet(nnunet_config_dict, bundle_root, fold=fold)
     runner.train_single_model(config=nnunet_config, fold=fold, val="")
 
 

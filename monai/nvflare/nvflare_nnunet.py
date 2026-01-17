@@ -611,7 +611,7 @@ def finalize_bundle(bundle_root, nnunet_root_dir=None, validate_with_nnunet=True
         nnunet_config_dict = {"dataset_name_or_id": dataset_name_or_id, "nnunet_trainer": trainer_class_name, "nnunet_config": nnunet_config}
         data_src_cfg = os.path.join(nnunet_root_dir, f"Task{dataset_name_or_id}_data_src_cfg.yaml")
         runner = nnUNetV2Runner(input_config=data_src_cfg, trainer_class_name=trainer_class_name, work_dir=nnunet_root_dir)
-        convert_monai_bundle_to_nnunet(nnunet_config_dict, bundle_root)
+        convert_monai_bundle_to_nnunet(nnunet_config_dict, bundle_root, fold=fold)
         validation_summary_dict, labels = validation_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name, nnunet_plans_name, fold)
         
         
