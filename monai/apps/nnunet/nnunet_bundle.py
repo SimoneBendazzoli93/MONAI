@@ -333,7 +333,7 @@ class ModelnnUNetWrapper(torch.nn.Module):
         return MetaTensor(out_tensor, meta=x.meta)
 
 
-def get_nnunet_monai_predictor(model_folder: str | Path, model_name: str = "model.pt", dataset_json: dict = None, plans: dict = None, nnunet_config: dict = None) -> ModelnnUNetWrapper:
+def get_nnunet_monai_predictor(model_folder: str | Path, model_name: str = "model.pt", dataset_json: dict = None, plans: dict = None, nnunet_config: dict = None, device: str = "cuda") -> ModelnnUNetWrapper:
     """
     Initializes and returns a `nnUNetMONAIModelWrapper` containing the corresponding `nnUNetPredictor`.
     The model folder should contain the following files, created during training:
@@ -370,6 +370,8 @@ def get_nnunet_monai_predictor(model_folder: str | Path, model_name: str = "mode
         The plans JSON file containing model configuration.
     nnunet_config : dict, optional
         The nnUNet configuration dictionary containing model parameters.
+    device : str, optional
+        The device to use for the predictor, by default "cuda".
 
     Returns
     -------
@@ -383,7 +385,7 @@ def get_nnunet_monai_predictor(model_folder: str | Path, model_name: str = "mode
         tile_step_size=0.5,
         use_gaussian=True,
         use_mirroring=False,
-        device=torch.device("cuda", 0),
+        device=torch.device(device),
         verbose=True,
         verbose_preprocessing=True,
         allow_tqdm=True,
