@@ -254,7 +254,7 @@ class ModelnnUNetWrapper(torch.nn.Module):
             configuration_manager,
             num_input_channels,
             plans_manager.get_label_manager(dataset_json).num_segmentation_heads,
-            enable_deep_supervision=True,
+            enable_deep_supervision=False,
         )
 
         predictor.plans_manager = plans_manager  # type: ignore
