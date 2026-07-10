@@ -85,10 +85,17 @@ def concatenate_modalities(dataset_format,data_dir, modality_dict, output_data_d
         case_ids = [label_file[:-len(modality_dict["label"])] for label_file in label_files]
         for case_id in case_ids:
             data = {}
+            missing_modalities = False
             for modality_id in modality_dict:
                 if modality_id != "label":
-                    data[modality_id] = str(Path(data_dir).joinpath("imagesTr").joinpath(case_id + modality_dict[modality_id])) 
+                    data[modality_id] = str(Path(data_dir).joinpath("imagesTr").joinpath(case_id + modality_dict[modality_id]))
+                    if not os.path.isfile(data[modality_id]):
+                        missing_modalities = True
+                        break
+            if missing_modalities:
+                continue
             print(f"Processing case: {case_id}")
+        
             transform(data)
             shutil.copy(Path(data_dir).joinpath(f"labelsTr/{case_id}"+ modality_dict[modality_id]), Path(labels_output_dir).joinpath(f"{case_id}"+ modality_dict[modality_id]))
     elif dataset_format == "subfolders":
@@ -104,13 +111,24 @@ def concatenate_modalities(dataset_format,data_dir, modality_dict, output_data_d
         ])
 
         for patient_id in os.listdir(data_dir):
+            if not os.path.isdir(Path(data_dir).joinpath(patient_id)):
+                continue
             data = {}
+            missing_modalities = False
             for modality_id in modality_dict:
                 if modality_id != "label":
                     if patient_id_in_file_identifier:
                         data[modality_id] = str(Path(data_dir).joinpath(patient_id, patient_id + modality_dict[modality_id]))
+                        if not os.path.isfile(data[modality_id]):
+                            missing_modalities = True
+                            break
                     else:
                         data[modality_id] = str(Path(data_dir).joinpath(patient_id, modality_dict[modality_id]))
+                        if not os.path.isfile(data[modality_id]):
+                            missing_modalities = True
+                            break
+            if missing_modalities:
+                continue
             print(f"Processing case: {patient_id}")
             transform(data)
 
@@ -204,19 +222,26 @@ def prepare_data_folder_api(data_dir,
     else:
         raise ValueError("Dataset format not supported")
 
+    non_existing_cases = []
     for idx, train_case in enumerate(data_list["training"]):
         for modality_id in modality_dict:
             if dataset_format == "monai-label":
                 data_list["training"][idx][modality_id + "_is_file"] = (
                     Path(data_list["training"][idx][modality_id]).is_file()
                 )
+                if not data_list["training"][idx][modality_id + "_is_file"]:
+                    non_existing_cases.append(data_list["training"][idx])
             else:
                 data_list["training"][idx][modality_id + "_is_file"] = (
                     Path(data_dir).joinpath(data_list["training"][idx][modality_id]).is_file()
                 )
+                if not data_list["training"][idx][modality_id + "_is_file"]:
+                    non_existing_cases.append(data_list["training"][idx])
             if "image" not in data_list["training"][idx] and modality_id != "label":
                 data_list["training"][idx]["image"] = data_list["training"][idx][modality_id]
         data_list["training"][idx]["fold"] = 0
+    
+    data_list["training"] = [case for case in data_list["training"] if case not in non_existing_cases]
 
     random.seed(42)
     random.shuffle(data_list["training"])
@@ -654,6 +679,8 @@ def validation_api(nnunet_root_dir, dataset_name_or_id, trainer_class_name="nnUN
     runner = nnUNetV2Runner(input_config=data_src_cfg, trainer_class_name=trainer_class_name, work_dir=nnunet_root_dir)
     if not skip_prediction:
         runner.train_single_model(config=nnunet_config, fold=fold, val="")
+    else:
+        print("Skipping prediction...")
     dataset_file = os.path.join(
         runner.nnunet_results,
         runner.dataset_name,
